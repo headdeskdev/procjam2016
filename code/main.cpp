@@ -17,14 +17,15 @@
 
 #include "game/proc_gen.cpp"
 #include "game/player.cpp"
-#include "game/world_renderer.cpp"
+//#include "game/world_renderer.cpp"
 
 #include "debug/imgui.cpp"
 
 struct GameState {
     bool loaded;
 
-    // De
+    // Assets
+    // NOTE: Since there is a minimal number of assets, I have decided not to create/use asset manager for this
     graphics_Texture* mainTexture;
     graphics_Shader* hyperShader;
     graphics_Shader* debugShader;
@@ -33,15 +34,13 @@ struct GameState {
     graphics_Material* testMaterial;
     graphics_Material* debugMaterial;
     graphics_Material* material2d;
-
     Font* font;
 
     memory_Arena assetMemory;
     memory_Arena frameMemory;
 
     Player player;
-    Vector2 lastMousePosition;    
-
+    
     ProcObjectList objectList;
     PhysicsSystem physicsSystem;   
 
@@ -74,7 +73,7 @@ CORE_LOOP {
         loadMemory.init(10000000, gameState->frameMemory.get(10000000));
 
         loadMemory.push();
-        gameState->mainTexture = getTextureFromFile("test.png", &loadMemory);
+        gameState->mainTexture = getTextureFromFile("maintexture.png", &loadMemory);
         loadMemory.pop();
         
         loadMemory.push();
@@ -118,7 +117,7 @@ CORE_LOOP {
         generateScene(1234, &gameState->objectList,&gameState->physicsSystem);        
         // PHYSICS
         
-        gameState->player.physics = addPhysicsObject(&gameState->physicsSystem, physicsObject);
+        gameState->player.physics = addPhysicsObject(&gameState->physicsSystem, getPlayerPhysicsObject());
 
         gameState->loaded = true;
         gameState->imguiState.ready = false;
@@ -132,11 +131,12 @@ CORE_LOOP {
 
     F32 t = 1/60.0f;
     
-    updatePlayer(&gameState->player, input, t);        
+    updatePlayer(&gameState->player, input, t, gameState->debugMode);        
     runPhysics(&gameState->physicsSystem, t);
-    updatePlayerPostPhysics(&gameState->player, &gameState->physic);
+    updatePlayerPostPhysics(&gameState->player, &gameState->physicsSystem);
 
     // RENDERER
+    // Move renderer stuff into other 
     Vector2 screenSize = {(F32)input->windowWidth, (F32)input->windowHeight};
 
     Renderer2d renderer2d = createRenderer2d(gameState->frameMemory.get(10000000), 10000000, 20000, gameState->material2d);
@@ -146,7 +146,7 @@ CORE_LOOP {
     gameState->renderer.backgroundColour = {0.21763764f*0.6f,0.21763764f*0.6f,0.6f};
     gameState->renderer.lightDirection = {0.7f,-0.6f,0.5f};
     gameState->renderer.screenSize = screenSize;
-    Camera3d camera = getPlayerCamera(gameState->player,screenSize);
+    Camera3d camera = getPlayerCamera(&gameState->player,screenSize);
     gameState->renderer.camera = camera;
     // gameState->renderer.renderWorld();
     

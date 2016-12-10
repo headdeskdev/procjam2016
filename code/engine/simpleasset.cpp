@@ -1,3 +1,5 @@
+// Potential future asset management. Probably just a system for a more jam-style game than a big project though.
+
 union simpleasset_Asset {
     GraphicsTexture* texture;    
     GraphicsShader* shader;    

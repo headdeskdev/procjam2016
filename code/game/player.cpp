@@ -6,6 +6,7 @@ struct GroundPlane {
 struct Player {
     PhysicsObject* physics;
     PhysicsObject* groundConstraintPhysics;
+    Vector2 lastMousePosition;   
     GroundPlane groundPlanes[10];
     U32 groundPlanesCount;
     U32 groundFrames;
@@ -64,7 +65,7 @@ PhysicsObject getPlayerPhysicsObject() {
     return physicsObject;
 }
 
-void updatePlayer(Player* player, platform_Input* input, F32 t) {
+void updatePlayer(Player* player, platform_Input* input, F32 t, bool debugMode) {
     if (player->physics->maxNormal >= 0.55) {
         player->groundFrames = 0;
     } else {
@@ -79,17 +80,17 @@ void updatePlayer(Player* player, platform_Input* input, F32 t) {
     }
 
     if (BUTTON_WAS_PRESSED(input->mousePointers[1].button)) {
-        gameState->lastMousePosition = input->mousePointers[1].finalPosition();
+        player->lastMousePosition = input->mousePointers[1].finalPosition();
     }
     if (input->lockMouse) {
-        gameState->lastMousePosition = { (F32) (input->windowWidth / 2), (F32) (input->windowHeight / 2)};
+        player->lastMousePosition = { (F32) (input->windowWidth / 2), (F32) (input->windowHeight / 2)};
     } 
     if (input->mousePointers[1].button.isDown || input->lockMouse) {
         Vector2 finalPosition = input->mousePointers[1].finalPosition();
         if (finalPosition.x > 0 && finalPosition.y > 0) {
-            lookDirection = gameState->lastMousePosition - finalPosition;
+            lookDirection = player->lastMousePosition - finalPosition;
             lookDirection.x = -lookDirection.x;
-            gameState->lastMousePosition = finalPosition;
+            player->lastMousePosition = finalPosition;
         }
     }
 
@@ -123,7 +124,7 @@ void updatePlayer(Player* player, platform_Input* input, F32 t) {
     if (player->tilt < -1.55) player->tilt = -1.55;
     player->pan += lookDirection.x * lookSpeed * t;
 
-    if (gameState->debugMode) {
+    if (debugMode) {
         Vector3 forwardDirection = {cosf(player->pan)*cosf(player->tilt),sinf(player->tilt),sinf(player->pan)*cosf(player->tilt)};
         Vector3 horizontalDirection = {-sinf(player->pan), 0.0, cosf(player->pan)};                
         //Vector3 down = {0.0f, moveDirection.z, 0.0f};
