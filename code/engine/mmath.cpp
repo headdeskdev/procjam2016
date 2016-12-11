@@ -117,3 +117,7 @@ Vector3 math_getBarycentricCoordinates(Vector3 p, Vector3 a, Vector3 b, Vector3 
     F32 u = 1.0f - v - w;
     return {u,v,w};
 }
+
+inline I32 math_clampI32(I32 x, I32 min, I32 max) {
+    return mmin(mmax(x,min),max);
+}

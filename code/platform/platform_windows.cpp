@@ -19,7 +19,7 @@
 // Declare the core loop function
 UPDATE_AND_RENDER(updateAndRender);
 
-static platform_MainMemory mainMemory;  
+static platform_MainState mainState;  
 static SDL_Window *window;
 static long long int globalCounterFrequency;
 
@@ -103,22 +103,21 @@ GET_CLOCK_TIME(getClockTime) {
   return platform_getWallClock().QuadPart;  
 }
 
-static platform_MainMemory* platform_initPlatform() {
+static platform_MainState* platform_initPlatform() {
 
   platform_initLoadCode();
   
   // TODO: how do we vary this memory
-  mainMemory.allocatedMemorySize = 268435456;
-  mainMemory.allocatedMemory = VirtualAlloc(0, mainMemory.allocatedMemorySize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+  mainState.state = 0;
 
-  mainMemory.isInitialised = false;  
+  mainState.isInitialised = false;  
   
   SDL_Window *mainwindow;   
   SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO);
   platform_loadXInput();
   SDL_VideoInit(NULL);   
   
-  mainwindow = SDL_CreateWindow("TODO: Fix Title", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+  mainwindow = SDL_CreateWindow("Procjam 2016", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
       1024, 768, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
   window = mainwindow;
@@ -139,7 +138,7 @@ static platform_MainMemory* platform_initPlatform() {
   globalCounterFrequency = performanceCounterFrequency.QuadPart;
   timeBeginPeriod(1);
 
-  return &mainMemory;
+  return &mainState;
 }
 
 static F32 platform_getSecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end) {
@@ -352,7 +351,7 @@ WinMain(HINSTANCE hInstance,
 
         I32 pww = input.windowWidth;
         I32 pwh = input.windowHeight;
-        updateAndRender(&mainMemory, &input, &functions); 
+        updateAndRender(&mainState, &input, &functions); 
         if (input.windowWidth != pww || input.windowHeight != pwh) {
           SDL_SetWindowSize(window, input.windowWidth, input.windowHeight);
         }

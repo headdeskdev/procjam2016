@@ -8,14 +8,13 @@ TODO: explanation
 #include "types.h"
 #include "mmath.h"
 
-#define UPDATE_AND_RENDER(name) void name(platform_MainMemory *memory, platform_Input *input, platform_Functions* functions)
+#define UPDATE_AND_RENDER(name) void name(platform_MainState *mainState, platform_Input *input, platform_Functions* functions)
 
 #define uint32FromPointer(pointer) ((U32)(size_t)(pointer))
 #define pointerFromUint32(type, value) (type *)((size_t)value)
 
-struct platform_MainMemory {
-  void* allocatedMemory;
-  U32 allocatedMemorySize;
+struct platform_MainState {
+  void* state;
   bool isInitialised;
 };
 
@@ -47,10 +46,10 @@ struct platform_Functions {
 typedef UPDATE_AND_RENDER(UpdateAndRender);
 
 #define CORE_LOOP UPDATE_AND_RENDER(updateAndRender)
-#define BEGIN_CORE_LOOP() setPlatformFunctions(functions)
+#define BEGIN_CORE_LOOP(StateType) (GameState*) initState(mainState, sizeof(GameState)); setPlatformFunctions(functions) 
 
 #ifdef MAIN_FILE
-#include "platform_functions.cpp"
+#include "init_platform_state.cpp"
 #endif
 
 #endif

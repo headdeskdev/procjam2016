@@ -148,7 +148,7 @@ static bool platform_reloadCode() {
 
 static inline UPDATE_AND_RENDER(updateAndRender) {    
     if(code.updateAndRender) {
-        code.updateAndRender(memory, input, functions);
+        code.updateAndRender(mainState, input, functions);
     }
 }
 

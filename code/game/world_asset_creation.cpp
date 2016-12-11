@@ -1,7 +1,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STBI_NO_STDIO
-#include "../../engine/stb/stb_image.h"
+#include "../engine/stb/stb_image.h"
 
 struct RawMeshData {
     U32 numVertices;
@@ -169,8 +169,8 @@ graphics_Shader* getShaderFromFile(char* vertexfile, char* fragmentfile, memory_
     assetMemory->push(); {
         platform_FileInfo vertexShader = readEntireFile(vertexfile,assetMemory->get(4194305),4194304);
         platform_FileInfo fragmentShader = readEntireFile(fragmentfile,assetMemory->get(4194305),4194304);
-		((char*)fragmentShader.data)[fragmentShader.size] = 0;
-		((char*)vertexShader.data)[vertexShader.size] = 0;
+        ((char*)fragmentShader.data)[fragmentShader.size] = 0;
+        ((char*)vertexShader.data)[vertexShader.size] = 0;
         graphics_ShaderData data = {(char*)vertexShader.data,(char*)fragmentShader.data};
         const char* names[3] = {"position","normal","uv"};    
         graphics_ShaderAttributes attributes = {names, 3};
@@ -181,18 +181,18 @@ graphics_Shader* getShaderFromFile(char* vertexfile, char* fragmentfile, memory_
 
 graphics_Shader* getShader2dFromFile(char* vertexfile, char* fragmentfile, memory_Stack* assetMemory)
 {
-	graphics_Shader* shader;
-	assetMemory->push(); {
-		platform_FileInfo vertexShader = readEntireFile(vertexfile, assetMemory->get(4194305), 4194304);
-		platform_FileInfo fragmentShader = readEntireFile(fragmentfile, assetMemory->get(4194305), 4194304);
-		((char*)fragmentShader.data)[fragmentShader.size] = 0;
-		((char*)vertexShader.data)[vertexShader.size] = 0;
-		graphics_ShaderData data = { (char*)vertexShader.data,(char*)fragmentShader.data };
-		const char* names[3] = { "position","uv","colour" };
-		graphics_ShaderAttributes attributes = { names, 3 };
-		shader = graphics_createShader(&data, attributes);
-	} assetMemory->pop();
-	return shader;
+    graphics_Shader* shader;
+    assetMemory->push(); {
+        platform_FileInfo vertexShader = readEntireFile(vertexfile, assetMemory->get(4194305), 4194304);
+        platform_FileInfo fragmentShader = readEntireFile(fragmentfile, assetMemory->get(4194305), 4194304);
+        ((char*)fragmentShader.data)[fragmentShader.size] = 0;
+        ((char*)vertexShader.data)[vertexShader.size] = 0;
+        graphics_ShaderData data = { (char*)vertexShader.data,(char*)fragmentShader.data };
+        const char* names[3] = { "position","uv","colour" };
+        graphics_ShaderAttributes attributes = { names, 3 };
+        shader = graphics_createShader(&data, attributes);
+    } assetMemory->pop();
+    return shader;
 }
 
 struct FontGlyph {  
@@ -292,4 +292,26 @@ inline static U32 getLineCutoffPoint(Font font, F32 size, char* text, F32 width)
 }
 
 
+graphics_Material* createWorldRendererMaterial(graphics_Shader* shader, graphics_Texture* texture, memory_Arena* assetMemory) {
+    graphics_Material* material = ARENA_GET_STRUCT(*assetMemory, graphics_Material);
+    material->defaultParameters = {0};
+    material->defaultParameters.parameters = ARENA_GET_ARRAY(*assetMemory, graphics_ShaderParameter, 1);
+    graphics_ShaderParameter param = {SHADER_PARAMETER_MAIN_TEXTURE, GRAPHICS_SHADER_PARAMETER_TEXTURE, 1, texture};
+    material->defaultParameters.addSortedParameter(param);
 
+    material->parameterMap.in = ARENA_GET_ARRAY(*assetMemory, I32, 10);
+    material->parameterMap.out = ARENA_GET_ARRAY(*assetMemory, I32, 10);
+    const char* names[10] = {"mainTexture",                  "ambientColor",
+                            "directionalViewDirection",   "directionalColor",
+                            "projectionMatrix",           "modelViewMatrix",
+                            "normalModelViewMatrix",      "clusterBufferTexture",
+                            "clusterItemBufferTexture",   "lightBufferTexture"};
+    U32 refs[10] = {SHADER_PARAMETER_MAIN_TEXTURE,          SHADER_PARAMETER_AMBIENT,
+                   SHADER_PARAMETER_DIRECTIONAL_DIRECTION,  SHADER_PARAMETER_DIRECTIONAL_COLOR,
+                   SHADER_PARAMETER_PROJECTION,             SHADER_PARAMETER_MODEL_VIEW,
+                   SHADER_PARAMETER_NORMAL_MODEL_VIEW,      SHADER_PARAMETER_CLUSTER_BUFFER,
+                   SHADER_PARAMETER_CLUSTER_ITEM_BUFFER,    SHADER_PARAMETER_LIGHT_BUFFER};
+    graphics_MaterialAttributes attributes = {names, refs, 10};
+    graphics_initMaterial(material, shader, attributes);
+    return material;
+}

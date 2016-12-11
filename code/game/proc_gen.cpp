@@ -1,70 +1,7 @@
-struct ProcObject {
-    Vector3 scale;
-    Vector3 position;
-    Quat rotation;
-    U32 type;
-};
-
-Matrix4 getModelMatrixForProcObject(ProcObject object) {
-    Matrix4 translationMatrix = math_getTranslationMatrix(object.position);
-    Matrix4 scaleMatrix = {  object.scale.x,0.0,0.0,0.0,
-                             0.0,object.scale.y,0.0,0.0,
-                             0.0,0.0,object.scale.z,0.0,
-                             0.0,0.0,0.0,1.0f};
-
-    return translationMatrix * (object.rotation.toRotationMatrix() * scaleMatrix);
-}
-
-struct ProcObjectList {
-	ProcObject* objects;
-	U32 objectsCount;
-	U32 objectsMax;
-	void addObject(Vector3 scale, Vector3 position, Quat rotation, U32 ctype)
-	{
-		// TODO: check Max
-		objects[objectsCount++] = {scale, position, rotation, ctype}; 
-	}
-};
-
-collision_Object getAlignedCuboidCollisionObject(Vector3 size, Vector3 centralPosition, Vector3 offset, Quat rotation) {
-    collision_Object collisionObject;
-    collisionObject.position = centralPosition + rotation.transformVector(offset);
-    collisionObject.type = COLLISION_OBJECT_CUBOID;
-
-    collision_Cuboid cuboid = {{{size.x/2.0f,0.0f,0.0f},{0.0f,size.y/2.0f,0.0f},{0.0,0.0,size.z/2.0f}}};
-    for (int i = 0; i < 3; i++) {
-        cuboid.halfSizeAxes[i] = rotation.transformVector(cuboid.halfSizeAxes[i]);
-    }
-    collisionObject.cuboid = cuboid;
-    return collisionObject;
-}
-
-collision_Object getCuboidCollisionObject(collision_Cuboid cuboid, Vector3 centralPosition, Vector3 offset, Quat rotation) {
-    collision_Object collisionObject;
-    collisionObject.position = centralPosition + rotation.transformVector(offset);
-    collisionObject.type = COLLISION_OBJECT_CUBOID;    
-    for (int i = 0; i < 3; i++) {
-        cuboid.halfSizeAxes[i] = rotation.transformVector(cuboid.halfSizeAxes[i]);
-    }
-    collisionObject.cuboid = cuboid;
-    return collisionObject;
-}
-
-collision_Object getPrismCollisionObject(collision_QuadPrism prism, Vector3 centralPosition, Vector3 offset, Quat rotation) {
-	collision_Object collisionObject;
-    collisionObject.position = centralPosition + rotation.transformVector(offset);
-    collisionObject.type = COLLISION_OBJECT_QUADPRISM;    
-    prism.x = rotation.transformVector(prism.x);
-    prism.y = rotation.transformVector(prism.y);
-    prism.up = rotation.transformVector(prism.up);
-    collisionObject.quadPrism = prism;
-    return collisionObject;
-
-}
-
 struct HighwayPos {
 	I32 angleInFifteens;
 	Vector3 position;
+	U32 count;
 };
 
 struct GridLevel {
@@ -160,7 +97,7 @@ HighwayPos createHighwaySegment(ProcObjectList* procObjs, HighwayPos pos, I32 tu
 			pos.position = pos.position + move*scale*1.58f + moveTangent*scale*1.35f;
 		}	
 		Quat quat = math_getAngleAxisQuat(angle,{0.0f,-1.0f,0.0f});	
-		procObjs->addObject({scale,scale,scale},pos.position,quat,3);
+		procObjs->addObject({scale,scale,scale},pos.position,quat,3);		
 		pos.angleInFifteens += turnDirection;
 
 		if (turnDirection > 0) {
@@ -170,8 +107,23 @@ HighwayPos createHighwaySegment(ProcObjectList* procObjs, HighwayPos pos, I32 tu
 			pos.position = pos.position + move*scale*1.58f + moveTangent*scale*1.35f;
 		} 			
 	}	
+
 	Quad quad = math_getAxisAlignedQuad({{-5.0f,-10.0f},{5.0f,10.0f}});
 	ProcObject procObj = procObjs->objects[procObjs->objectsCount-1];
+
+	if (pos.count % 4 == 0) {		
+		for (int i = 0; i < 2; i++) {
+			Vector3 yOffset = { 0.0, scale * 4.0f, 4.0 };
+			if (i % 2 == 0) {
+				yOffset.z = -yOffset.z;
+			}
+			yOffset = procObj.rotation.transformVector(yOffset);
+			Vector3 lightPosition = procObj.position + yOffset;
+			Vector3 color = { 0.7f,0.9f,0.9f };
+			procObjs->addLight(color, lightPosition, scale * 18.0f, 1.3f);
+		}
+	}
+
 	TransformMatrix2d matrix2d = math_get2dRigidTransformMatrix({procObj.position.x,procObj.position.z},angle,scale);
 	quad = matrix2d.transformQuad(quad);
 	
@@ -193,6 +145,7 @@ HighwayPos createHighwaySegment(ProcObjectList* procObjs, HighwayPos pos, I32 tu
 
 	// TODO: more accurate?
 	levelFillQuad(level, quad, value);
+	pos.count += 1;
 	return pos;
 }
 
@@ -362,7 +315,8 @@ void freeCityGraph(CityGraph graph) {
 static U32 disabled = 0;
 static U32 enabled = 0;
 
-void generateScene(U32 seed, ProcObjectList* procObjs, PhysicsSystem* physics) {
+// NOTE: graph generation not actually used yet
+void generateScene(U32 seed, ProcObjectList* procObjs) {
 
 	enabled = 0;
 	disabled = 0;
@@ -383,7 +337,7 @@ void generateScene(U32 seed, ProcObjectList* procObjs, PhysicsSystem* physics) {
     	F32 offset = r.frand()*70.0f - 35.0f;	
     	F32 vertical = -25.0f;
     	Vector3 move = {-cosf(angle)*250.0f+sinf(angle)*offset,j * 10.0f + vertical,-sinf(angle)*250.0f-cosf(angle)*offset};
-    	HighwayPos highwayPos = {3*((j * 5) % 8), move};
+    	HighwayPos highwayPos = {3*((j * 5) % 8), move, 0};
 	    for (int i = 0; i < 90; i++) {
 	    	U16 value = 1;
 	    	if (i == 0 || i == 89) { value = 2;}
@@ -641,91 +595,5 @@ void generateScene(U32 seed, ProcObjectList* procObjs, PhysicsSystem* physics) {
 	free(grid);
 	freeCityGraph(cityGraph);
 	free(positions);
-
-	physics->clearStaticCollision();
-	for (int i = 0; i < procObjs->objectsCount; i++) {
-		ProcObject* object = procObjs->objects + i;
-
-		Vector3 scale = object->scale;
-    	Vector3 position = object->position;
-    	Quat rotation = object->rotation;
-    
-		switch(object->type) {
-			case 0: {
-				if (scale.x < 2.0f && scale.y < 2.0f) {
-					Vector3 size = {scale.x*2.0f,scale.y*3.0f,scale.z*2.0f};
-					Vector3 offset = {0.0f};
-					collision_Object collision = getAlignedCuboidCollisionObject(size, position, offset, rotation);
-					addStaticCollision(physics,collision,0.0f,1.0f);					
-				} else {
-					{
-						Vector3 size = {scale.x*1.0f,scale.y*3.0f,scale.z*2.0f};
-						Vector3 offset = {scale.x*-0.5f,0.0f,0.0f};
-						collision_Object collision = getAlignedCuboidCollisionObject(size, position, offset, rotation);
-						addStaticCollision(physics,collision,0.0f,1.0f);						
-					}
-					{
-						Vector3 size = {scale.x*2.0f,scale.y*3.0f,scale.z*1.0f};
-						Vector3 offset = {0.0f,0.0f,scale.z*-0.5f};
-						collision_Object collision = getAlignedCuboidCollisionObject(size, position, offset, rotation);
-						addStaticCollision(physics,collision,0.0f,1.0f);						
-					}
-					{
-						collision_Cuboid cuboid = {{{scale.x/2.0f,0.0f,scale.z/2.0f},{0.0f,scale.y*1.5f,0.0f},{scale.x/2.0f,0.0f,-scale.z/2.0f}}};
-						Vector3 offset = {0.0f};
-						collision_Object collision = getCuboidCollisionObject(cuboid, position, offset, rotation);
-						addStaticCollision(physics,collision,0.0f,1.0f);						
-					}
-					if (scale.z > 3.0f) {
-						for (int j = 0; j < 3; j++) {
-							Vector3 size = {scale.x*0.8f,scale.y*0.5f,scale.z*0.2f};
-							Vector3 offset = {scale.x*-0.5f,scale.y*(j*1.0f - 1.15f),scale.z*1.0f};
-							collision_Object collision = getAlignedCuboidCollisionObject(size, position, offset, rotation);
-							addStaticCollision(physics,collision,0.0f,1.0f);	
-						}
-					}
-				}
-
-				if (scale.y > 3.0f) {
-					Vector3 size = {scale.x * 0.8f, scale.y * 0.2f, scale.z * 0.4f};
-					Vector3 offset = {scale.x * 0.5f, scale.y * 1.5f, scale.z * -0.7f};
-					collision_Object collision = getAlignedCuboidCollisionObject(size, position, offset, rotation);
-					addStaticCollision(physics,collision,0.0f,1.0f);
-				}
-
-						
-			} break;
-			case 1: {
-
-			} break;
-			case 2: {
-				Vector3 size = {scale.x*10.0f,scale.y*2.0f,scale.z*20.0f};
-				Vector3 offset = {0.0f};
-				collision_Object collision = getAlignedCuboidCollisionObject(size, position, offset, rotation);
-				addStaticCollision(physics,collision,0.0f,1.0f);
-				if (scale.y > 0.5f) {
-					Vector3 size = {scale.x*7.0f,scale.y*2.0f,scale.z*6.0f};
-					{
-						Vector3 offset = {0.0f, -1.0f*scale.y, scale.z*5.0f};
-						collision_Object collision = getAlignedCuboidCollisionObject(size, position, offset, rotation);
-						addStaticCollision(physics,collision,0.0f,1.0f);
-					}
-					{
-						Vector3 offset = {0.0f, -1.0f*scale.y, scale.z*-5.0f};
-						collision_Object collision = getAlignedCuboidCollisionObject(size, position, offset, rotation);
-						addStaticCollision(physics,collision,0.0f,1.0f);
-					}
-				}
-			} break;
-			case 3: {
-				collision_QuadPrism prism = {{0.0,1.0,0.0},{1.0,0.0,0.0},{0.0,0.0,1.0},
-											 {{scale.x*5.0f,scale.z*-10.0f},{scale.x*5.0f,scale.z*10.0f},{scale.x*-9.0f,scale.z*9.0f},{scale.x*-4.0f,scale.z*-10.0f}},
-											scale.y*2.0f};
-				Vector3 offset = {0.0f};
-				collision_Object collision = getPrismCollisionObject(prism, position, offset, rotation);
-				addStaticCollision(physics,collision,0.0f,1.0f);
-			} break;
-		}
-	}
 	
 }

@@ -111,18 +111,21 @@ AABB calculateBoundingBox(collision_Object collision) {
 	return boundingBox;
 }
 
-PhysicsSystem createPhysicsSystem(memory_Arena* memory, U32 maxObjects, U32 maxStaticObjects, U32 maxContacts, U32 maxIntersections) {
+PhysicsSystem createPhysicsSystem(U32 maxObjects, U32 maxStaticObjects, U32 maxContacts, U32 maxIntersections) {
+	U32 maxSize = (maxObjects + maxStaticObjects) * sizeof(PhysicsObject) + maxContacts * sizeof(PhysicsContact) + maxIntersections * sizeof(PhysicsIntersection);
+	memory_Arena memory = memory_createArena(malloc(maxSize), maxSize);
+
 	PhysicsSystem physics = {0};
-	physics.objects = ARENA_GET_ARRAY(*memory,PhysicsObject,maxObjects);
+	physics.objects = ARENA_GET_ARRAY(memory,PhysicsObject,maxObjects);
 	physics.maxObjects = maxObjects;
 
-	physics.staticObjects = ARENA_GET_ARRAY(*memory,PhysicsObject,maxStaticObjects);
+	physics.staticObjects = ARENA_GET_ARRAY(memory,PhysicsObject,maxStaticObjects);
 	physics.maxStaticObjects = maxStaticObjects;
 
-	physics.contacts = ARENA_GET_ARRAY(*memory,PhysicsContact,maxContacts);
+	physics.contacts = ARENA_GET_ARRAY(memory,PhysicsContact,maxContacts);
 	physics.maxContacts = maxContacts;	
 
-	physics.intersections = ARENA_GET_ARRAY(*memory,PhysicsIntersection,maxIntersections);
+	physics.intersections = ARENA_GET_ARRAY(memory,PhysicsIntersection,maxIntersections);
 	physics.maxIntersections = maxIntersections;	
 	return physics;
 }

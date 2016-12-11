@@ -1,40 +1,76 @@
-#version 150 core
+#version 140
 
+uniform sampler2D mainTexture;
 
+// Lighting uniforms
+uniform vec3 ambientColor;
+uniform vec3 directionalViewDirection[2];
+uniform vec3 directionalColor[2];
+uniform usamplerBuffer clusterBufferTexture;
+uniform usamplerBuffer clusterItemBufferTexture;
+uniform samplerBuffer lightBufferTexture;
 
-uniform float textureScale;
-uniform sampler2D textureMap;
-uniform vec3 cameraSpaceLightDirection; // TODO: replace with better lighting
-//uniform vec3 ambientLight;
-//uniform vec4 lightingInfo[4];
-
-in vec4 cameraSpaceNormal;
-in vec4 worldPosition;
-in vec4 cameraSpacePos;
-in vec2 texCoord;
+in vec3 viewPosition;
+in vec4 frustumPosition;
+in vec3 viewNormal;
+in vec2 fragUV;
 
 out vec4 out_Color;
 
+const float samplesX = 16.0;
+const float samplesY = 8.0;
+const float samplesZ = 24.0;
+
+vec3 calculateLighting(vec3 normal, vec3 clusterPosition) 
+{
+    vec3 lighting = ambientColor;
+    //lighting += vec3(1.0);
+    for (int i = 0; i < 2; i++) {
+        float intensity = max(0.0,dot(directionalViewDirection[i],-normal));
+        //lighting += directionalColor[i]*intensity;
+    }
+    int x = int(clamp(floor(clusterPosition.x * samplesX),0.0,samplesX-1.0));
+    int y = int(clamp(floor(clusterPosition.y * samplesY),0.0,samplesY-1.0));
+    int z = int(clamp(floor(clusterPosition.z * samplesZ),0.0,samplesZ-1.0));
+    int cluster = (x + y * 16 + z * 8 * 16) * 2;
+    uint lightOffset = texelFetch(clusterBufferTexture, cluster).r;
+    uint lightCount = texelFetch(clusterBufferTexture, cluster + 1).r;
+
+    for (uint i = uint(0); i < lightCount; i++) {
+        int offset = int(lightOffset + i);
+        int lightNumber = int(texelFetch(clusterItemBufferTexture, offset).r);
+
+        vec4 lightViewPositionRange = texelFetch(lightBufferTexture, lightNumber*3);
+        vec4 lightViewDirectionDot = texelFetch(lightBufferTexture, lightNumber*3+1);
+        vec4 lightColorW = texelFetch(lightBufferTexture, lightNumber*3+2);
+
+        vec3 lightViewPosition = lightViewPositionRange.xyz;
+        float lightRange = lightViewPositionRange.w;
+
+        vec3 lightViewDirection = lightViewDirectionDot.xyz;
+        float lightDot = lightViewDirectionDot.w;
+
+        vec3 lightColor = lightColorW.xyz;
+
+        vec3 lightRay = viewPosition-lightViewPosition;
+        float length = length(lightRay);
+        lightRay = lightRay / length;
+
+        float cone = 1.0;//smoothstep(lightDot-0.05, lightDot+0.05, dot(lightRay, lightViewDirection));
+        float denom = (1.0+length/(0.25*lightRange));
+        float fade = max(0.0,(25.0/(denom*denom) - 1.0) / 24.0);
+        float lightIntensity = lightColorW.w*cone*fade*max(0.0,dot(lightRay,-normal));
+
+        lighting += lightColor*lightIntensity;
+    }
+    return lighting;
+}
+
 void main(void)
-{		
-	float x = length(cameraSpacePos);
-	float invfog = exp(-0.025 * x) * 1.0;
-	float light = 0.65 + 0.35*dot(normalize(vec4(-cameraSpaceLightDirection,0.0)),cameraSpaceNormal);
-
-	vec4 textureData = texture(textureMap,texCoord);
-	float textureValue = (1.0-step(textureData.r, 0.5))*0.7 + 0.3;
-
-	if (textureValue < 0.5) {
-	 invfog = invfog*0.5+0.5;
-	}
-
-    float bluepink = textureValue*light*invfog + 0.5*(1.0-invfog);
-    float gamma = 2.2;  
-	vec3 converted = vec3(pow(1.0-bluepink,gamma),pow(bluepink,gamma),1.0);
-	
-	float fogreduction = clamp(invfog*0.4 + 0.6,0.6,1.0);
-
-    out_Color = vec4(converted*fogreduction,1.0);	
-    //out_Color = vec4(vec3(fogreduction*bluepink),1.0);
-
+{
+    vec3 fragmentFrustum = frustumPosition.xyz;
+    fragmentFrustum.z = 0.125662*log(fragmentFrustum.z + 0.25) + 0.131923;
+    fragmentFrustum.xy = (fragmentFrustum.xy/frustumPosition.w)*0.5 + vec2(0.5);
+    vec4 textureData = texture(mainTexture,fragUV);
+    out_Color = vec4(calculateLighting(normalize(viewNormal),fragmentFrustum),1.0)*textureData;
 }

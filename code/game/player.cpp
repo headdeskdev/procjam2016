@@ -14,13 +14,18 @@ struct Player {
     F32 pan;
 };
 
+struct Camera3d {
+    Matrix4 projectionMatrix;
+    Matrix4 viewMatrix;
+};
+
 Camera3d getPlayerCamera(Player* player, Vector2 screenSize) {
     Vector3 viewDirection = {cosf(player->pan)*cosf(player->tilt),sinf(player->tilt),sinf(player->pan)*cosf(player->tilt)};
     Vector3 up = player->physics->collision.capsule.up;
 
     F32 cameraHeight = player->physics->collision.capsule.capRadius/2.0f+player->physics->collision.capsule.middleHeight/2.0f;
 
-    return {math_getPerspectiveMatrix(0.05f,1000,screenSize.x/screenSize.y,1.396f),
+    return {math_getPerspectiveMatrix(0.1f,1000.0,screenSize.x/screenSize.y,1.396f),
             math_getViewMatrix(player->physics->position + (up * cameraHeight), viewDirection, up)};
 }
 

@@ -12,3 +12,12 @@ void setPlatformFunctions(platform_Functions* functions) {
     getClockTime = functions->getClockTime;
 }
 
+void* initState(platform_MainState* mainState, U32 sizeOfState) {
+    if (!mainState->isInitialised) {
+        void* memory = malloc(sizeOfState);
+        memset(memory, 0, sizeOfState);
+        mainState->state = memory;
+        mainState->isInitialised = true;
+    }
+    return mainState->state;
+}
