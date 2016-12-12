@@ -34,6 +34,8 @@ struct GameState {
     WorldRenderer* renderer;
 
     bool debugMode;
+
+    F32 timeSinceBeginning;
 };
 
 CORE_LOOP {
@@ -60,9 +62,10 @@ CORE_LOOP {
         gameState->loaded = true;
         gameState->imguiState.ready = false;
         gameState->debugMode = false;
+        gameState->timeSinceBeginning = 0.0f;
     }
     F32 t = 1/60.0f;
-    
+    gameState->timeSinceBeginning += t;
     updatePlayer(&gameState->player, input, t, gameState->debugMode);        
     runPhysics(&gameState->physicsSystem, t);
     updatePlayerPostPhysics(&gameState->player, &gameState->physicsSystem);
@@ -71,7 +74,7 @@ CORE_LOOP {
     Vector2 screenSize = {(F32)input->windowWidth, (F32)input->windowHeight};
     Camera3d camera = getPlayerCamera(&gameState->player,screenSize);
     gameState->renderer->initFrame(camera.viewMatrix, camera.projectionMatrix, screenSize);
-    renderProcObjectListScene(&gameState->objectList, gameState->renderer, &gameState->assets);
+    renderProcObjectListScene(&gameState->objectList, gameState->renderer, &gameState->assets, gameState->timeSinceBeginning);
     gameState->renderer->render();
 
     // Debug buttons

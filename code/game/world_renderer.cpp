@@ -1,7 +1,7 @@
 #define WORLD_RENDERER_CLUSTER_WIDTH 16
 #define WORLD_RENDERER_CLUSTER_HEIGHT 8
 #define WORLD_RENDERER_CLUSTER_DEPTH 24
-#define WORLD_RENDERER_AVERAGE_CLUSTER_LIGHTS 8
+#define WORLD_RENDERER_AVERAGE_CLUSTER_LIGHTS 10
 #define WORLD_RENDERER_MAX_LIGHTS 8192
 #define WORLD_RENDERER_MAX_OBJECTS 16384
 
@@ -41,6 +41,8 @@ enum WorldRendererShaderParameter {
     SHADER_PARAMETER_CLUSTER_BUFFER,
     SHADER_PARAMETER_CLUSTER_ITEM_BUFFER,
     SHADER_PARAMETER_LIGHT_BUFFER,
+
+    SHADER_PARAMETER_BACKGROUND,
 
     SHADER_PARAMETER_MODEL_VIEW,
     SHADER_PARAMETER_NORMAL_MODEL_VIEW,
@@ -192,6 +194,8 @@ struct WorldRenderer {
     }
 
     void render() {
+		static U32 maxClusters;
+		maxClusters = mmax(lightingSystem.additionalClusters, maxClusters);
         U32 baseClusters = WORLD_RENDERER_CLUSTER_WIDTH*WORLD_RENDERER_CLUSTER_HEIGHT*WORLD_RENDERER_CLUSTER_DEPTH;
         U32 clusterItemsMax = baseClusters*WORLD_RENDERER_AVERAGE_CLUSTER_LIGHTS;
 
@@ -208,7 +212,7 @@ struct WorldRenderer {
 
                     U16 currentCount = 0;
                     Cluster* currentCluster = lightingSystem.clusters[clusterNum];
-                    while(currentCluster) {
+                    while(currentCluster && clusterItemsMax > clusterItemCurrent + currentCount) {
                         clusterItemData[clusterItemCurrent+currentCount] = currentCluster->light;
                         currentCluster = currentCluster->nextCluster;
                         currentCount++;
@@ -281,7 +285,7 @@ struct WorldRenderer {
         pass.viewportHeight = screenSize.y;
         // NOTE: Is there a way of doing this that handles the memory nicely + doesn't produce
         // lots of code
-        pass.globalParameters.parameters = ARENA_GET_ARRAY(rendererFrameMemory, graphics_ShaderParameter, 7);
+        pass.globalParameters.parameters = ARENA_GET_ARRAY(rendererFrameMemory, graphics_ShaderParameter, 8);
 
         {graphics_ShaderParameter projectionParameter = {SHADER_PARAMETER_PROJECTION,GRAPHICS_SHADER_PARAMETER_MAT4,1};
         Matrix4* newMatrix = ARENA_GET_STRUCT(rendererFrameMemory, Matrix4);
@@ -294,6 +298,12 @@ struct WorldRenderer {
         *ambient = ambientLight.color;
         ambientParameter.vector3Param = ambient;
         pass.globalParameters.addSortedParameter(ambientParameter);}
+
+        {graphics_ShaderParameter backgroundParameter = {SHADER_PARAMETER_BACKGROUND,GRAPHICS_SHADER_PARAMETER_VEC3,1};
+        Vector3* background = ARENA_GET_STRUCT(rendererFrameMemory, Vector3);
+        *background = backgroundColour;
+        backgroundParameter.vector3Param = background;
+        pass.globalParameters.addSortedParameter(backgroundParameter);}
 
         {graphics_ShaderParameter directionalDirectionParameter = {SHADER_PARAMETER_DIRECTIONAL_DIRECTION,GRAPHICS_SHADER_PARAMETER_VEC3,2};
         Vector3* directionalDirection = ARENA_GET_ARRAY(rendererFrameMemory, Vector3, 2);

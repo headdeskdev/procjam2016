@@ -354,6 +354,6 @@ Matrix4 math_getViewMatrix(Vector3 p_pos, Vector3 p_dir, Vector3 p_up);
 Matrix4 math_getTranslationMatrix(Vector3 translation);
 Matrix4 math_getScaleMatrix(F32 scale);
 
-#define PI 3.14159265
+#define PI 3.14159265f
 
 #endif

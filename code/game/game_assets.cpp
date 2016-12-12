@@ -40,7 +40,7 @@ void loadAssets(GameAssets* assets) {
     assets->meshes[0] = getMeshFromFile("block.vsmf", &loadMemory);        
     loadMemory.pop();
     loadMemory.push();
-    assets->meshes[1] = getMeshFromFile("bar.vsmf", &loadMemory);        
+    assets->meshes[1] = getMeshFromFile("lamp.vsmf", &loadMemory);        
     loadMemory.pop();
     loadMemory.push();
     assets->meshes[2] = getMeshFromFile("floor.vsmf", &loadMemory);        

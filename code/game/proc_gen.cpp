@@ -113,14 +113,20 @@ HighwayPos createHighwaySegment(ProcObjectList* procObjs, HighwayPos pos, I32 tu
 
 	if (pos.count % 4 == 0) {		
 		for (int i = 0; i < 2; i++) {
-			Vector3 yOffset = { 0.0, scale * 4.0f, 4.0 };
+			Vector3 yOffset = { 0.0, scale * 3.5f, 4.0 };
 			if (i % 2 == 0) {
 				yOffset.z = -yOffset.z;
 			}
 			yOffset = procObj.rotation.transformVector(yOffset);
 			Vector3 lightPosition = procObj.position + yOffset;
-			Vector3 color = { 0.7f,0.9f,0.9f };
-			procObjs->addLight(color, lightPosition, scale * 18.0f, 1.3f);
+			Vector3 color = { 0.7f,0.5f,0.2f };
+			Vector3 direction = { 0.0, -1.0f, 0.0};
+			procObjs->addLight(color, lightPosition, direction, scale * 15.0f, 4.0f, 0.4f);
+			Vector3 lampOffset = {0.0f, scale * 8.0f, 9.0f*scale*(i*2 - 1)};			
+			lampOffset = procObj.rotation.transformVector(lampOffset);
+			Vector3 lampPosition = procObj.position + lampOffset;
+			Quat lampRotation = math_getAngleAxisQuat(angle+PI*i,{0.0f,-1.0f,0.0f});
+			procObjs->addObject(procObj.scale,lampPosition,lampRotation,1);
 		}
 	}
 
@@ -589,6 +595,35 @@ void generateScene(U32 seed, ProcObjectList* procObjs) {
 			Quat rotation = math_getAngleAxisQuat(PI*r.getInteger(2),{0.0f,1.0f,0.0f});
 			Vector3 position = {building->rect.min.x + scale.x, building->height/2.0f-49.0f, building->rect.min.y + scale.z};
 			procObjs->addObject(scale,position,rotation,0);
+
+			Matrix4 transform = getModelMatrixForProcObject(procObjs->objects[(procObjs->objectsCount - 1)]);
+
+			const Vector3 lightArray[12] = {{-0.8f, 1.7f, 0.0f},{-0.4f, 1.7f, 0.0f},{0.8f,1.8f,-0.7f},
+										   {-0.5f, 1.3f, 1.2f},{-0.5f, 0.75f, 1.2f},{-0.5f, -0.25f, 1.2f},
+										   {-0.5f, -1.25f, 1.2f},{0.3f, 0.6f, 0.9f},{-1.2f, -0.5f, -0.4f},
+										   {0.1f, -1.25f, -1.2f},{-0.4f, 0.65f, -1.2f},{-0.75f, 0.65f, -1.2f}};
+			const Vector3 lightScale[12] = {{0.5f,0.15f,0.9f},{0.5f,0.15f,0.9f},{0.3f,0.15f,0.4f},
+										   {0.6f, 0.5f, 0.15f},{0.6f, 0.3f, 0.15f},{0.6f, 0.3f, 0.15f},
+											{0.6f, 0.3f, 0.15f},{0.3f, 0.9f, 0.3f},{0.15f, 0.9f, 0.4f},
+											{0.6f, 0.3f, 0.15f},{0.3f, 0.6f, 0.15f},{0.3f, 0.6f, 0.15f}};
+
+			for (int i = 0; i < 12; i++) {
+				bool enabled = true;
+				if (i >= 3 && building->height < 20) {
+					enabled = (r.frand() < 0.1);
+				} else if (building->height >= 20) {
+					enabled = (r.frand() < 0.4);
+				} else {
+					enabled = (r.frand() < 0.6);
+				}
+				if (enabled) {
+					Vector3 lightPosition = transform.transformPoint(lightArray[i]);
+					F32 radiusScale = scale.dot(lightScale[i]);
+					Vector3 color = { 0.2f+r.frand()*0.3f,0.4f+r.frand()*0.2f,0.5f+r.frand()*0.4f};
+					Vector3 direction = { 0.0, -1.0f, 0.0};
+					procObjs->addLight(color, lightPosition, direction, radiusScale, 3.0f, -2.0f);
+				}
+			}
 		}
 	}
 

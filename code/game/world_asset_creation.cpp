@@ -299,19 +299,21 @@ graphics_Material* createWorldRendererMaterial(graphics_Shader* shader, graphics
     graphics_ShaderParameter param = {SHADER_PARAMETER_MAIN_TEXTURE, GRAPHICS_SHADER_PARAMETER_TEXTURE, 1, texture};
     material->defaultParameters.addSortedParameter(param);
 
-    material->parameterMap.in = ARENA_GET_ARRAY(*assetMemory, I32, 10);
-    material->parameterMap.out = ARENA_GET_ARRAY(*assetMemory, I32, 10);
-    const char* names[10] = {"mainTexture",                  "ambientColor",
+    material->parameterMap.in = ARENA_GET_ARRAY(*assetMemory, I32, 11);
+    material->parameterMap.out = ARENA_GET_ARRAY(*assetMemory, I32, 11);
+    const char* names[11] = {"mainTexture",                  "ambientColor",
                             "directionalViewDirection",   "directionalColor",
                             "projectionMatrix",           "modelViewMatrix",
                             "normalModelViewMatrix",      "clusterBufferTexture",
-                            "clusterItemBufferTexture",   "lightBufferTexture"};
-    U32 refs[10] = {SHADER_PARAMETER_MAIN_TEXTURE,          SHADER_PARAMETER_AMBIENT,
+                            "clusterItemBufferTexture",   "lightBufferTexture",
+                            "backgroundColor"};
+    U32 refs[11] = {SHADER_PARAMETER_MAIN_TEXTURE,          SHADER_PARAMETER_AMBIENT,
                    SHADER_PARAMETER_DIRECTIONAL_DIRECTION,  SHADER_PARAMETER_DIRECTIONAL_COLOR,
                    SHADER_PARAMETER_PROJECTION,             SHADER_PARAMETER_MODEL_VIEW,
                    SHADER_PARAMETER_NORMAL_MODEL_VIEW,      SHADER_PARAMETER_CLUSTER_BUFFER,
-                   SHADER_PARAMETER_CLUSTER_ITEM_BUFFER,    SHADER_PARAMETER_LIGHT_BUFFER};
-    graphics_MaterialAttributes attributes = {names, refs, 10};
+                   SHADER_PARAMETER_CLUSTER_ITEM_BUFFER,    SHADER_PARAMETER_LIGHT_BUFFER,
+                   SHADER_PARAMETER_BACKGROUND};
+    graphics_MaterialAttributes attributes = {names, refs, 11};
     graphics_initMaterial(material, shader, attributes);
     return material;
 }
