@@ -43,6 +43,7 @@ void setGrid(GridLevel* level, U8 x, U8 y, U8 value) {
 	level->data[x][y] = value;
 }
 
+// TODO: something a little more accurate?
 void levelFillTriangle(GridLevel* level, Vector2 vt1, Vector2 vt2, Vector2 vt3, U16 value) {
 	F32 minX = mmin(vt1.x, vt2.x);
 	minX = mmin(minX, vt3.x);
@@ -122,34 +123,17 @@ HighwayPos createHighwaySegment(ProcObjectList* procObjs, HighwayPos pos, I32 tu
 			Vector3 color = { 0.7f,0.5f,0.2f };
 			Vector3 direction = { 0.0, -1.0f, 0.0};
 			procObjs->addLight(color, lightPosition, direction, scale * 15.0f, 4.0f, 0.4f);
-			Vector3 lampOffset = {0.0f, scale * 8.0f, 9.0f*scale*(i*2 - 1)};			
+			Vector3 lampOffset = {0.0f, scale * 6.4f, 9.0f*scale*(i*2 - 1)};			
 			lampOffset = procObj.rotation.transformVector(lampOffset);
 			Vector3 lampPosition = procObj.position + lampOffset;
 			Quat lampRotation = math_getAngleAxisQuat(angle+PI*i,{0.0f,-1.0f,0.0f});
-			procObjs->addObject(procObj.scale,lampPosition,lampRotation,1);
+			procObjs->addObject(procObj.scale*0.8,lampPosition,lampRotation,1);
 		}
 	}
 
 	TransformMatrix2d matrix2d = math_get2dRigidTransformMatrix({procObj.position.x,procObj.position.z},angle,scale);
 	quad = matrix2d.transformQuad(quad);
 	
-	if (turnDirection == 0) {
-		// Vector2 tpA = {0.0f, 5.0f};
-		// Vector2 tpB = {0.0f, -5.0f};
-		// tpA = matrix2d.transformPoint(tpA);
-		// tpB = matrix2d.transformPoint(tpB);
-		// Quat quatA = getAngleAxisQuat(angle+PI,{0.0f,-1.0f,0.0f});
-		// Quat quatB = getAngleAxisQuat(angle,{0.0f,-1.0f,0.0f});
-		// for (int i = 0; i < 2; i++) {
-		// 	Vector3 towerPosA = {tpA.x, procObj.position.y-scale*(10.0f + 20.0f*i), tpA.y};	
-		// 	Vector3 towerPosB = {tpB.x, procObj.position.y-scale*(10.0f + 20.0f*i), tpB.y};
-		// 	procObjs->addObject({scale,scale,scale},towerPosA,quatA,1);
-		// 	procObjs->addObject({scale,scale,scale},towerPosB,quatB,1);
-		// }
-
-	}
-
-	// TODO: more accurate?
 	levelFillQuad(level, quad, value);
 	pos.count += 1;
 	return pos;

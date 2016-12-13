@@ -212,10 +212,20 @@ void platform_getInput(platform_Input* input, platform_Input* old) {
   SDL_GetWindowPosition(window, &windowX, &windowY);
   Vector2 windowOffset = {(F32)windowX,(F32)windowY};
   Vector2 windowSize = {(F32)input->windowWidth, (F32)input->windowHeight};
-
+  static bool inFocus = true;
   SDL_Event e;  
   while (SDL_PollEvent(&e)) {
-    switch (e.type) {      
+    switch (e.type) {    
+      case SDL_WINDOWEVENT: {
+          switch (e.window.event) {
+              case SDL_WINDOWEVENT_FOCUS_GAINED:
+                  inFocus = true;
+                  break;
+              case SDL_WINDOWEVENT_FOCUS_LOST:
+                  inFocus = false;
+                  break;
+          }  
+      } break;
       case SDL_QUIT: {
         input->quit = true;
       } break;
@@ -315,7 +325,7 @@ void platform_getInput(platform_Input* input, platform_Input* old) {
     platform_updateTouchIDMap();
   }
 
-  if (old->lockMouse) {
+  if (old->lockMouse && inFocus) {
     SDL_WarpMouseInWindow( window, input->windowWidth / 2, input->windowHeight / 2);
     SDL_ShowCursor(0);
   } else {
@@ -356,8 +366,16 @@ WinMain(HINSTANCE hInstance,
           SDL_SetWindowSize(window, input.windowWidth, input.windowHeight);
         }
 		
-		Vector2 windowSize = {(F32)input.windowWidth, (F32)input.windowHeight};
-        
+		    Vector2 windowSize = {(F32)input.windowWidth, (F32)input.windowHeight};
+        static bool fullscreen = false;
+        if (input.fullscreenToggle) {
+			    fullscreen = !fullscreen;
+          if (fullscreen) {
+            SDL_SetWindowFullscreen(window,SDL_WINDOW_FULLSCREEN_DESKTOP);
+          } else {
+            SDL_SetWindowFullscreen(window,0);
+          }
+        }
         
         if (input.quit) {
           return 0;

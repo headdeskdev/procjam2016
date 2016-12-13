@@ -78,8 +78,6 @@ void updatePlayer(Player* player, platform_Input* input, F32 t, bool debugMode) 
     }
     Vector2 lookDirection = {0.0};
 
-    input->lockMouse = false;
-
     if (BUTTON_WAS_PRESSED(input->k_r)) {
         player->physics->position = {1.4f,150.0f,0.2f};
     }
@@ -120,6 +118,12 @@ void updatePlayer(Player* player, platform_Input* input, F32 t, bool debugMode) 
     if (moveDirection.length() > 0.1) {
         isMoving = true;
     }        
+
+    if (isMoving) {
+        player->physics->constantConstraint = false;
+    } else {
+        player->physics->constantConstraint = true;
+    }
     
     F32 lookSpeed = 0.3;
 
@@ -172,7 +176,7 @@ void updatePlayer(Player* player, platform_Input* input, F32 t, bool debugMode) 
             }
             player->physics->acceleration = moveVector * 80.0f + gravity;        
         } else {
-            player->physics->acceleration = moveVector * 2.0f + gravity;
+            player->physics->acceleration = moveVector * 5.0f + gravity;
         }
 
 

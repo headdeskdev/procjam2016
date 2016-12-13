@@ -158,7 +158,9 @@ struct platform_Input {
   const char* (*getClipboardText)();
   void  (*setClipboardText)(const char* text); 
   bool lockMouse;
-
+  // FULLSCREEN STATE
+  // TODO: make this not a toggle
+  bool fullscreenToggle;
   // THIS IS TO FORCE THE APP TO QUIT
   bool quit;
 };

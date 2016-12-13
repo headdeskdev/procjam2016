@@ -44,6 +44,8 @@ struct PhysicsObject {
 	F32 restitution;
 	F32 friction;
 	F32 drag;
+	// TODO: proper constraint system
+	bool constantConstraint;
 
 	U32 type;
 	U32 clippableTypes;
@@ -299,15 +301,17 @@ void runPhysics(PhysicsSystem* physics, F32 t) {
 				// Determine which resolution to use
 			}
 		}
-
-		for (U32 i = 0; i < physics->objectsCount; i++) {
-			PhysicsObject* object = physics->objects + i;			
-			if (object->minNormal >= 0.55) {
-				object->velocity.x = object->horizontalVelocity.x;
-				object->velocity.z = object->horizontalVelocity.z;
-			} 						
-		}
 		// TODO: remove hardcoded values
+		
+		for (U32 i = 0; i < physics->objectsCount; i++) {
+			PhysicsObject* object = physics->objects + i;
+			if (object->constantConstraint) {							
+				if (object->minNormal >= 0.55) {
+					object->velocity.x = object->horizontalVelocity.x;
+					object->velocity.z = object->horizontalVelocity.z;
+				} 						
+			}
+		}
 		for (U32 i = 0; i < physics->objectsCount; i++) {
 			PhysicsObject* object = physics->objects + i;			
 			Vector3 horizontalVelocity = {object->velocity.x,0.0f,object->velocity.z};

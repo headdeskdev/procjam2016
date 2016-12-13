@@ -33,7 +33,7 @@ struct GameState {
 
     WorldRenderer* renderer;
 
-    bool debugMode;
+    bool flightMode;
 
     F32 timeSinceBeginning;
 };
@@ -61,12 +61,15 @@ CORE_LOOP {
 
         gameState->loaded = true;
         gameState->imguiState.ready = false;
-        gameState->debugMode = false;
+        gameState->flightMode = false;
         gameState->timeSinceBeginning = 0.0f;
+
+
     }
+    input->lockMouse = true;
     F32 t = 1/60.0f;
     gameState->timeSinceBeginning += t;
-    updatePlayer(&gameState->player, input, t, gameState->debugMode);        
+    updatePlayer(&gameState->player, input, t, gameState->flightMode);        
     runPhysics(&gameState->physicsSystem, t);
     updatePlayerPostPhysics(&gameState->player, &gameState->physicsSystem);
 
@@ -77,11 +80,10 @@ CORE_LOOP {
     renderProcObjectListScene(&gameState->objectList, gameState->renderer, &gameState->assets, gameState->timeSinceBeginning);
     gameState->renderer->render();
 
-    // Debug buttons
-    if (BUTTON_WAS_PRESSED(input->k_g)) {
-        gameState->objectList.objectsCount = 0;        
-        generateScene(1234, &gameState->objectList);
-        generateStaticPhysicsFromProcObjectList(&gameState->objectList, &gameState->physicsSystem);
+    // Modify buttons
+
+    if (BUTTON_WAS_PRESSED(input->k_esc)) {
+        input->quit = true;
     }
     
     if (BUTTON_WAS_PRESSED(input->k_r)) {
@@ -90,9 +92,15 @@ CORE_LOOP {
         generateStaticPhysicsFromProcObjectList(&gameState->objectList, &gameState->physicsSystem);
     }
 
-    if (BUTTON_WAS_PRESSED(input->k_m)) {
-        gameState->debugMode = !gameState->debugMode;
+    if (BUTTON_WAS_PRESSED(input->k_e)) {
+        gameState->flightMode = !gameState->flightMode;
     }
+
+    if (BUTTON_WAS_PRESSED(input->k_f)) {
+        input->fullscreenToggle = true;
+    }
+
+
 
 
     // Renderer2d renderer2d = createRenderer2d(gameState->frameMemory.get(10000000), 10000000, 20000, gameState->material2d);

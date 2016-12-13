@@ -1,4 +1,4 @@
 @echo off
 pushd ..\data
-@start ..\build\Prototype.exe
+@start ..\build\procjam2016.exe
 popd
