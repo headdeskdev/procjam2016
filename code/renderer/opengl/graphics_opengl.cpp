@@ -93,6 +93,38 @@ static void renderMesh(graphics_Mesh* mesh) {
     glDrawElements(GL_TRIANGLES, mesh->trianglesCount*3, GL_UNSIGNED_INT, NULL);
 }
 
+static void renderQuad(graphics_Quad* gquad) {
+    Quad quad = gquad->quad;
+    Rect texture = gquad->textureCoord;
+    Vector4 colour = gquad->colour;
+
+    glBegin(GL_TRIANGLES);
+    glVertexAttrib4f(2,colour.x,colour.y,colour.z,colour.w);
+    glVertexAttrib2f(1,texture.min.x, texture.min.y);
+    glVertex2f(quad.bottomleft.x, quad.bottomleft.y);
+
+    glVertexAttrib4f(2,colour.x,colour.y,colour.z,colour.w);
+    glVertexAttrib2f(1,texture.max.x, texture.min.y);
+    glVertex2f(quad.bottomright.x, quad.bottomright.y);
+
+    glVertexAttrib4f(2,colour.x,colour.y,colour.z,colour.w);
+    glVertexAttrib2f(1,texture.max.x, texture.max.y);
+    glVertex2f(quad.topright.x, quad.topright.y);
+
+    glVertexAttrib4f(2,colour.x,colour.y,colour.z,colour.w);
+    glVertexAttrib2f(1,texture.min.x, texture.min.y);
+    glVertex2f(quad.bottomleft.x, quad.bottomleft.y);
+
+    glVertexAttrib4f(2,colour.x,colour.y,colour.z,colour.w);
+    glVertexAttrib2f(1,texture.max.x, texture.max.y);
+    glVertex2f(quad.topright.x, quad.topright.y);
+
+    glVertexAttrib4f(2,colour.x,colour.y,colour.z,colour.w);
+    glVertexAttrib2f(1,texture.min.x, texture.max.y);
+    glVertex2f(quad.topleft.x, quad.topleft.y);
+    glEnd();  
+}
+
 
 graphics_RenderPassOutput graphics_render(graphics_RenderPass* pass, graphics_RenderObject* renderObjects, U32 renderObjectsCount) {
     // Set pass properties
@@ -144,6 +176,9 @@ graphics_RenderPassOutput graphics_render(graphics_RenderPass* pass, graphics_Re
                 setMaterial(renderObject->meshMaterial->material, &pass->globalParameters, &renderObject->objectParameters);
                 renderMesh(renderObject->meshMaterial->mesh);
                 break;
+            case RENDER_OBJECT_QUAD_MATERIAL:
+                setMaterial(renderObject->quadMaterial->material, &pass->globalParameters, &renderObject->objectParameters);
+                renderQuad(renderObject->quadMaterial->quad);
             default:
                 break;
         }

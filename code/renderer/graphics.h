@@ -152,11 +152,24 @@ struct graphics_Material {
 struct graphics_MeshMaterial {
     graphics_Mesh* mesh;
     graphics_Material* material;
+};
 
+struct graphics_Quad {
+    Quad quad;
+    Rect textureCoord;
+    Vector4 colour;
+};
+
+struct graphics_QuadMaterial {
+    graphics_Quad* quad;
+    graphics_Material* material;  
 };
 
 enum graphics_RenderObjectType {
-    RENDER_OBJECT_MESH_MATERIAL
+    RENDER_OBJECT_MESH_MATERIAL,
+
+    // TOOD: Maybe just use meshes
+    RENDER_OBJECT_QUAD_MATERIAL
     // NOTE: Are there actually good reasons to have other types?
 };
 
@@ -164,6 +177,7 @@ struct graphics_RenderObject {
     graphics_RenderObjectType type;
     union {
         graphics_MeshMaterial* meshMaterial;
+        graphics_QuadMaterial* quadMaterial;
     };
     graphics_ShaderParameterSortedList objectParameters;
 };

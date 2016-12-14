@@ -137,8 +137,10 @@ typedef ptrdiff_t GLsizeiptr;
     GLE(void,      UniformMatrix3fv,        GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) \
     GLE(void,      UniformMatrix4fv,        GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) \
     GLE(void,      UseProgram,              GLuint program) \
-    GLE(void,      ValidateProgram,              GLuint program) \
+    GLE(void,      ValidateProgram,         GLuint program) \
     GLE(void,      VertexAttribPointer,     GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid * pointer) \
+    GLE(void,      VertexAttrib2f,          GLuint index, GLfloat v0, GLfloat v1) \
+    GLE(void,      VertexAttrib4f,          GLuint index, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) \
     /* end */
 
 #define GLE(ret, name, ...) typedef ret GLDECL name##proc(__VA_ARGS__); extern name##proc * gl##name;

@@ -5,12 +5,12 @@ struct GameAssets {
     graphics_Texture* mainTexture;
     graphics_Shader* hyperShader;
     //graphics_Shader* debugShader;
-    //graphics_Shader* shader2d;    
+    graphics_Shader* shader2d;    
     graphics_Mesh* meshes[4];
     graphics_Material* hyperMaterial;
     //graphics_Material* debugMaterial;
-    //graphics_Material* material2d;
-    //Font* font;
+    graphics_Material* material2d;
+    Font* font;
     memory_Arena assetMemory;
 };
 
@@ -32,9 +32,9 @@ void loadAssets(GameAssets* assets) {
     // assets->debugShader = getShaderFromFile("shaderdebug.vert", "shaderdebug.frag", &loadMemory);
     // loadMemory.pop();
 
-    // loadMemory.push();
-    // assets->shader2d = getShader2dFromFile("shader2d.vert", "shader2d.frag", &loadMemory);
-    // loadMemory.pop();
+    loadMemory.push();
+    assets->shader2d = getShader2dFromFile("shader2d.vert", "shader2d.frag", &loadMemory);
+    loadMemory.pop();
 
     loadMemory.push();
     assets->meshes[0] = getMeshFromFile("block.vsmf", &loadMemory);        
@@ -50,12 +50,13 @@ void loadAssets(GameAssets* assets) {
     loadMemory.pop();
 
 
-    // loadMemory.push();
-    // assets->font = loadFontAndTexture("boldkeys32.fnt","boldkeys32.png",&loadMemory,assets->assetMemory.get(getFontMemorySize("boldkeys32.fnt")));
-    // loadMemory.pop();
+    loadMemory.push();
+    assets->font = loadFontAndTexture("boldkeys32.fnt","boldkeys32.png",&loadMemory,assets->assetMemory.get(getFontMemorySize("boldkeys32.fnt")));
+    loadMemory.pop();
 
     assets->hyperMaterial = createWorldRendererMaterial(assets->hyperShader,assets->mainTexture,&assets->assetMemory);
+    assets->material2d = create2dMaterial(assets->shader2d,&assets->assetMemory);
     // assets->debugMaterial = createTestMaterial(assets->debugShader,assets->mainTexture,&assets->assetMemory);
-    // assets->material2d = create2dMaterial(assets->shader2d,&assets->assetMemory);
+    
     free(loadMemoryBasePointer);
 }

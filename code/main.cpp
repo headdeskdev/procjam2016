@@ -7,15 +7,18 @@
 #include "renderer/opengl/graphics_opengl.cpp"
 //#include "renderer/directx/graphics_directx11.cpp"
 
-// #include "engine/text.cpp"
 #include "engine/assets.cpp"
 
 #include "game/world_renderer.cpp"
 #include "game/world_asset_creation.cpp"
+#include "game/ui_renderer.cpp"
+
 #include "game/game_assets.cpp"
 #include "game/proc_scene.cpp"
 #include "game/proc_gen.cpp"
 #include "game/player.cpp"
+
+
 
 #include "debug/imgui.cpp"
 
@@ -32,8 +35,10 @@ struct GameState {
     ImguiGLState imguiState;
 
     WorldRenderer* renderer;
+    Renderer2d* renderer2d;
 
     bool flightMode;
+    bool ui;
 
     F32 timeSinceBeginning;
 };
@@ -58,10 +63,12 @@ CORE_LOOP {
         generateStaticPhysicsFromProcObjectList(&gameState->objectList, &gameState->physicsSystem);
         
         gameState->renderer = createWorldRenderer(0x04000000); // 33554432 bytes
+        gameState->renderer2d = createRenderer2d(0x04000000, 10000, gameState->assets.material2d);
 
         gameState->loaded = true;
         gameState->imguiState.ready = false;
         gameState->flightMode = false;
+        gameState->ui = true;
         gameState->timeSinceBeginning = 0.0f;
 
 
@@ -100,20 +107,28 @@ CORE_LOOP {
         input->fullscreenToggle = true;
     }
 
+    if (BUTTON_WAS_PRESSED(input->k_u)) {
+        gameState->ui = !gameState->ui;
+    }
 
+    if (gameState->ui) {
+        gameState->renderer2d->initFrame(screenSize);
 
-
-    // Renderer2d renderer2d = createRenderer2d(gameState->frameMemory.get(10000000), 10000000, 20000, gameState->material2d);
-    // renderer2d.setScreenSize(screenSize);
-
-    // // Draw UI:
-    // Quad quad = math_getAxisAlignedQuad({10.0f,10.0f, 200.0f,200.0f});
-    // Rect rect = {0.0f,0.0f,1.0f,1.0f};
-    // Vector4 colour = {1.0f, 1.0f, 1.0f, 1.0f};
-    // pushText(&renderer2d, gameState->font, {10.0f, 60.0f}, 32.0f, colour, "DEMO");
-    // // pushText(&renderer2d, gameState->font, {10.0f, 30.0f}, 32.0f, colour, "PRESS 1, 2, 3 TO CHANGE DEFAULT SETTINGS");
-    
-    // renderer2d.render2d();
+        // Draw UI:
+        Quad quad = math_getAxisAlignedQuad({10.0f,10.0f, 200.0f,200.0f});
+        Rect rect = {0.0f,0.0f,1.0f,1.0f};
+        Vector4 colour = {1.0f, 1.0f, 1.0f, 1.0f};
+        if (gameState->flightMode) {
+            pushText(gameState->renderer2d, gameState->assets.font, {10.0f, 30.0f}, 32.0f, colour, "WASD + Mouse to Move. Space to jump. Press E to enter flying mode");
+        } else {
+            pushText(gameState->renderer2d, gameState->assets.font, {10.0f, 30.0f}, 32.0f, colour, "WASD + Mouse to Move. Hold Shift to move faster. Press E to exit flying mode");
+        }
+        pushText(gameState->renderer2d, gameState->assets.font, {10.0f, 60.0f}, 32.0f, colour, "Press R to regenerate the scene");
+        pushText(gameState->renderer2d, gameState->assets.font, {10.0f, 90.0f}, 32.0f, colour, "Press ESC to exit. Press F to toggle fullscreen. Press U to show/hide this text");
+        // pushText(&renderer2d, gameState->font, {10.0f, 30.0f}, 32.0f, colour, "PRESS 1, 2, 3 TO CHANGE DEFAULT SETTINGS");
+        
+        gameState->renderer2d->render2d();
+    }
 
     // ImGuiIO& io = beginImgui(input, &gameState->imguiState);
     // ImGui::NewFrame();  
