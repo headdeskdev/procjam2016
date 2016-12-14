@@ -23,7 +23,7 @@ const float samplesX = 16.0;
 const float samplesY = 8.0;
 const float samplesZ = 24.0;
 
-vec3 calculateLighting(vec3 normal, vec3 clusterPosition, float specular) 
+vec3 calculateLighting(vec3 normal, vec3 clusterPosition) 
 {
     vec3 lighting = ambientColor;
     //lighting += vec3(1.0);
@@ -68,11 +68,11 @@ vec3 calculateLighting(vec3 normal, vec3 clusterPosition, float specular)
     return lighting;
 }
 
-vec3 applyFog(vec3  input, float distance)
+vec3 applyFog(vec3  inputColor, float distance)
 {
 	float fogAmount = clamp(1.0 - exp( -distance*0.01 ), 0.0, 1.0);
     vec3 fogColor = pow(backgroundColor,vec3(2.2));
-    return mix( input, fogColor, fogAmount );
+    return mix( inputColor, fogColor, fogAmount );
 }
 
 void main(void)
@@ -81,7 +81,7 @@ void main(void)
     fragmentFrustum.z = 0.125662*log(fragmentFrustum.z + 0.25) + 0.131923;
     fragmentFrustum.xy = (fragmentFrustum.xy/frustumPosition.w)*0.5 + vec2(0.5);
     vec4 textureData = texture(mainTexture,fragUV);
-	vec3 color = calculateLighting(normalize(viewNormal),fragmentFrustum,step(textureData.r, 0.5)) * vec3((step(textureData.r, 0.5))*0.9+0.05);	
+	vec3 color = calculateLighting(normalize(viewNormal),fragmentFrustum) * vec3((step(textureData.r, 0.5))*0.9+0.05);	
 	color = applyFog(color, length(viewPosition));
     out_Color = vec4(pow(color, vec3(1.0/2.2)),1.0);
 }

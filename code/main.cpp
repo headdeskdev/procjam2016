@@ -118,7 +118,7 @@ CORE_LOOP {
         Quad quad = math_getAxisAlignedQuad({10.0f,10.0f, 200.0f,200.0f});
         Rect rect = {0.0f,0.0f,1.0f,1.0f};
         Vector4 colour = {1.0f, 1.0f, 1.0f, 1.0f};
-        if (gameState->flightMode) {
+        if (!gameState->flightMode) {
             pushText(gameState->renderer2d, gameState->assets.font, {10.0f, 30.0f}, 32.0f, colour, "WASD + Mouse to Move. Space to jump. Press E to enter flying mode");
         } else {
             pushText(gameState->renderer2d, gameState->assets.font, {10.0f, 30.0f}, 32.0f, colour, "WASD + Mouse to Move. Hold Shift to move faster. Press E to exit flying mode");
