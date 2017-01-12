@@ -56,6 +56,8 @@ struct WorldRenderer {
     LightInstance directionalLights[2];
     LightInstance ambientLight;
 
+    graphics_Material* depthMaterial;
+
     Matrix4 viewMatrix;
     Matrix4 perspectiveMatrix;
     Vector2 screenSize;
@@ -274,12 +276,36 @@ struct WorldRenderer {
         }    
 
         // RENDER PASS: render all objects with lights
+
+        graphics_RenderPass depthPass = {0};
+        depthPass.depthCheck = true;        
+        depthPass.cullFace = true;
+        depthPass.clearColourEnabled = true;
+        depthPass.clearColour = backgroundColour;
+        depthPass.clearDepthEnabled = true;    
+        depthPass.writeDepth = true;
+        depthPass.depthCheckType = GRAPHICS_DEPTH_LESS;
+        depthPass.viewportWidth = screenSize.x;
+        depthPass.viewportHeight = screenSize.y;
+
+        depthPass.globalParameters.parameters = ARENA_GET_ARRAY(rendererFrameMemory, graphics_ShaderParameter, 1);
+
+        {graphics_ShaderParameter projectionParameter = {SHADER_PARAMETER_PROJECTION,GRAPHICS_SHADER_PARAMETER_MAT4,1};
+        Matrix4* newMatrix = ARENA_GET_STRUCT(rendererFrameMemory, Matrix4);
+        *newMatrix = perspectiveMatrix;            
+        projectionParameter.matrix4Param = newMatrix;
+        depthPass.globalParameters.addSortedParameter(projectionParameter);}
+        depthPass.materialOverride = depthMaterial;
+
+        graphics_render(&depthPass, objects, objectsCount);
+
         graphics_RenderPass pass = {0};
-        pass.clearColourEnabled = true;
-        pass.clearColour = backgroundColour;
-        pass.clearDepthEnabled = true;
+        pass.clearColourEnabled = false;
+        pass.clearDepthEnabled = false;
         pass.depthCheck = true;
-        pass.writeDepth = true;
+        pass.depthCheckType = GRAPHICS_DEPTH_EQUAL;
+        pass.writeDepth = false;
+
         pass.cullFace = true;
         pass.viewportWidth = screenSize.x;
         pass.viewportHeight = screenSize.y;

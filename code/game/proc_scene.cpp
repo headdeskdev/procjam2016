@@ -58,7 +58,7 @@ Matrix4 getNormalModelMatrixForProcObject(ProcObject object) {
     return translationMatrix * (object.rotation.toRotationMatrix() * scaleMatrix);
 }
 
-void renderProcObjectListScene(ProcObjectList* procObjs, WorldRenderer* renderer, GameAssets* assets, F32 t) {
+void renderProcObjectListScene(WorldRenderer* renderer, Player* player, ProcObjectList* procObjs, GameAssets* assets, F32 t) {
     
     // yellow -> pink -> light blue -> light blue -> orange -> purple -> darkblue -> darkblue -> darkpurple -> darkyellow -> yellow
     const F32 intervalTimes[10] = {2.0f,1.0f,15.0f,1.5f,1.5f, 0.5f,14.0f,1.0f,1.0f,3.5f};    
@@ -107,7 +107,14 @@ void renderProcObjectListScene(ProcObjectList* procObjs, WorldRenderer* renderer
     }
 	renderer->directionalLights[1].color = { 0.02f,0.03f,0.05f };
 
-
+	ProcObject grappleObject;
+	grappleObject.position = player->grapplingHook.physics->position;
+	grappleObject.rotation = math_getAngleAxisQuat(PI, { 0.0,0.0,1.0 });
+	grappleObject.scale = { 0.175f,0.175f,0.175f };
+	Matrix4 drawMatrix = getModelMatrixForProcObject(grappleObject);
+	Matrix4 normalMatrix = getNormalModelMatrixForProcObject(grappleObject);
+	graphics_Mesh* mesh = assets->meshes[0];
+	renderer->addObject(mesh, assets->hyperMaterial, &drawMatrix, &normalMatrix);
 
 	// Do hover lights
 	for (int i = 0; i < 2; i++) {

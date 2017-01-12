@@ -13,10 +13,11 @@
 #include "game/world_asset_creation.cpp"
 #include "game/ui_renderer.cpp"
 
+#include "game/player.cpp"
 #include "game/game_assets.cpp"
 #include "game/proc_scene.cpp"
 #include "game/proc_gen.cpp"
-#include "game/player.cpp"
+
 
 
 
@@ -58,11 +59,13 @@ CORE_LOOP {
         
         gameState->physicsSystem = createPhysicsSystem(100, 40000, 500, 500);
         gameState->player.physics = addPhysicsObject(&gameState->physicsSystem, getPlayerPhysicsObject());
+        gameState->player.grapplingHook.physics = addPhysicsObject(&gameState->physicsSystem, getGrapplingPhysicsObject());
         
         generateScene(1234, &gameState->objectList);      
         generateStaticPhysicsFromProcObjectList(&gameState->objectList, &gameState->physicsSystem);
         
         gameState->renderer = createWorldRenderer(0x04000000); // 33554432 bytes
+        gameState->renderer->depthMaterial = gameState->assets.depthMaterial;
         gameState->renderer2d = createRenderer2d(0x04000000, 10000, gameState->assets.material2d);
 
         gameState->loaded = true;
@@ -79,12 +82,12 @@ CORE_LOOP {
     updatePlayer(&gameState->player, input, t, gameState->flightMode);        
     runPhysics(&gameState->physicsSystem, t);
     updatePlayerPostPhysics(&gameState->player, &gameState->physicsSystem);
-
+	checkGrapplingCollision(&gameState->player, &gameState->physicsSystem);
 
     Vector2 screenSize = {(F32)input->windowWidth, (F32)input->windowHeight};
     Camera3d camera = getPlayerCamera(&gameState->player,screenSize);
     gameState->renderer->initFrame(camera.viewMatrix, camera.projectionMatrix, screenSize);
-    renderProcObjectListScene(&gameState->objectList, gameState->renderer, &gameState->assets, gameState->timeSinceBeginning);
+    renderProcObjectListScene(gameState->renderer, &gameState->player, &gameState->objectList, &gameState->assets, gameState->timeSinceBeginning);
     gameState->renderer->render();
 
     // Modify buttons
@@ -130,11 +133,11 @@ CORE_LOOP {
         gameState->renderer2d->render2d();
     }
 
-    // ImGuiIO& io = beginImgui(input, &gameState->imguiState);
-    // ImGui::NewFrame();  
-    // ImGui::Text("Enabled: %d", enabled);
-    // ImGui::Text("Disabled: %d", disabled);
-    // glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);    
-    // ImGui::Render();
+    ImGuiIO& io = beginImgui(input, &gameState->imguiState);
+    ImGui::NewFrame();  
+    ImGui::Text("Enabled: %d", sizeof(platform_Input));
+    ImGui::Text("Disabled: %d", sizeof(platform_Input)/1024);
+    glViewport(0, 0, (int)ImGui::GetIO().DisplaySize.x, (int)ImGui::GetIO().DisplaySize.y);    
+    ImGui::Render();
 
 }

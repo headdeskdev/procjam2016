@@ -4,11 +4,11 @@
 struct GameAssets {
     graphics_Texture* mainTexture;
     graphics_Shader* hyperShader;
-    //graphics_Shader* debugShader;
+    graphics_Shader* depthShader;
     graphics_Shader* shader2d;    
     graphics_Mesh* meshes[4];
     graphics_Material* hyperMaterial;
-    //graphics_Material* debugMaterial;
+    graphics_Material* depthMaterial;
     graphics_Material* material2d;
     Font* font;
     memory_Arena assetMemory;
@@ -28,9 +28,9 @@ void loadAssets(GameAssets* assets) {
     assets->hyperShader = getShaderFromFile("shader.vert", "shader.frag", &loadMemory);
     loadMemory.pop();
 
-    // loadMemory.push();
-    // assets->debugShader = getShaderFromFile("shaderdebug.vert", "shaderdebug.frag", &loadMemory);
-    // loadMemory.pop();
+    loadMemory.push();
+    assets->depthShader = getShaderFromFile("shaderdepth.vert", "shaderdepth.frag", &loadMemory);
+    loadMemory.pop();
 
     loadMemory.push();
     assets->shader2d = getShader2dFromFile("shader2d.vert", "shader2d.frag", &loadMemory);
@@ -55,6 +55,7 @@ void loadAssets(GameAssets* assets) {
     loadMemory.pop();
 
     assets->hyperMaterial = createWorldRendererMaterial(assets->hyperShader,assets->mainTexture,&assets->assetMemory);
+    assets->depthMaterial = createWorldRendererMaterial(assets->depthShader,assets->mainTexture,&assets->assetMemory);
     assets->material2d = create2dMaterial(assets->shader2d,&assets->assetMemory);
     // assets->debugMaterial = createTestMaterial(assets->debugShader,assets->mainTexture,&assets->assetMemory);
     

@@ -125,13 +125,20 @@ static void renderQuad(graphics_Quad* gquad) {
     glEnd();  
 }
 
-
 graphics_RenderPassOutput graphics_render(graphics_RenderPass* pass, graphics_RenderObject* renderObjects, U32 renderObjectsCount) {
     // Set pass properties
     glViewport(0.0, 0.0, pass->viewportWidth, pass->viewportHeight);
 
     if (pass->depthCheck) {
         glEnable(GL_DEPTH_TEST);
+        switch(pass->depthCheckType) {
+            case GRAPHICS_DEPTH_EQUAL:
+                glDepthFunc(GL_EQUAL);
+                break;
+            default:
+                glDepthFunc(GL_LESS);
+                break;
+        }
     } else {
         glDisable(GL_DEPTH_TEST);
     }
@@ -173,7 +180,12 @@ graphics_RenderPassOutput graphics_render(graphics_RenderPass* pass, graphics_Re
         graphics_RenderObject* renderObject = renderObjects + i;
         switch(renderObject->type) {
             case RENDER_OBJECT_MESH_MATERIAL:
-                setMaterial(renderObject->meshMaterial->material, &pass->globalParameters, &renderObject->objectParameters);
+                if (pass->materialOverride == 0) {
+                    setMaterial(renderObject->meshMaterial->material, &pass->globalParameters, &renderObject->objectParameters);    
+                } else {
+                    setMaterial(pass->materialOverride, &pass->globalParameters, &renderObject->objectParameters);
+                }
+                
                 renderMesh(renderObject->meshMaterial->mesh);
                 break;
             case RENDER_OBJECT_QUAD_MATERIAL:

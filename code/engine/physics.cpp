@@ -44,13 +44,17 @@ struct PhysicsObject {
 	F32 restitution;
 	F32 friction;
 	F32 drag;
-	// TODO: proper constraint system
-	bool constantConstraint;
 
+	bool active;
 	U32 type;
 	U32 clippableTypes;
 	U32 interactableTypes;
 	//ContactList* firstContact;
+
+	// TODO: proper constraint system
+	bool constantConstraint;
+	F32 maxSpeed;
+
 
 	// TODO: figure out how to make this just for objects that require the constraints player objects
 	F32 maxNormal;
@@ -82,6 +86,8 @@ struct PhysicsIntersection {
 
 struct PhysicsSystem {
 	PhysicsObject* objects;	
+	PhysicsObject** activeObjects;	
+	U32 activeObjectsCount;
 	U32 objectsCount;	
 	U32 maxObjects;
 
@@ -119,6 +125,7 @@ PhysicsSystem createPhysicsSystem(U32 maxObjects, U32 maxStaticObjects, U32 maxC
 
 	PhysicsSystem physics = {0};
 	physics.objects = ARENA_GET_ARRAY(memory,PhysicsObject,maxObjects);
+	physics.activeObjects = ARENA_GET_ARRAY(memory, PhysicsObject*, maxObjects);
 	physics.maxObjects = maxObjects;
 
 	physics.staticObjects = ARENA_GET_ARRAY(memory,PhysicsObject,maxStaticObjects);
@@ -158,16 +165,22 @@ PhysicsObject* addPhysicsObject(PhysicsSystem* physics, PhysicsObject object) {
 #define RESTITUTION_SLOP 0.01f
 
 void runPhysics(PhysicsSystem* physics, F32 t) {	
-	// "Integration" step	
+	physics->activeObjectsCount = 0;
 	for (U32 i = 0; i < physics->objectsCount; i++) {
 		PhysicsObject* object = physics->objects + i;
+		// TODO: can we use this step for optimisation
+		if (object->active) {
+			physics->activeObjects[physics->activeObjectsCount++] = object;
+		}
+	}
+	// "Integration" step	
+	for (U32 i = 0; i < physics->activeObjectsCount; i++) {
+		PhysicsObject* object = physics->activeObjects[i];
 		if (object->physicsType != PHYSICS_STATIC) {
 			Vector3 acceleration = object->acceleration - (object->velocity * object->drag);
-			object->position = object->position + (object->velocity * t) + (object->acceleration * (0.5f*t*t));
 			object->velocity = object->velocity + (object->acceleration * t);			
 			object->collision.position = object->position;
-			object->boundingBox = calculateBoundingBox(object->collision);
-			
+			object->boundingBox = calculateBoundingBox(object->collision);			
 			object->maxNormal = -2.0f;
 			object->minNormal = 2.0f;
 			object->horizontalVelocity = {object->velocity.x,0.0f,object->velocity.z};
@@ -177,8 +190,8 @@ void runPhysics(PhysicsSystem* physics, F32 t) {
 	physics->contactsCount = 0;
 	physics->intersectionsCount = 0;
 
-	for (U32 i = 0; i < physics->objectsCount; i++) {
-		for (U32 j = 0; j < physics->objectsCount; j++) {
+	for (U32 i = 0; i < physics->activeObjectsCount; i++) {
+		for (U32 j = 0; j < physics->activeObjectsCount; j++) {
 			// TODO: non static collisions
 			// Check bounding box
 
@@ -191,8 +204,8 @@ void runPhysics(PhysicsSystem* physics, F32 t) {
 		}
 	}
 
-	for (U32 i = 0; i < physics->objectsCount; i++) {
-		PhysicsObject* objectB = physics->objects + i;
+	for (U32 i = 0; i < physics->activeObjectsCount; i++) {
+		PhysicsObject* objectB = physics->activeObjects[i];
 		for (U32 j = 0; j < physics->staticObjectsCount; j++) {
 			PhysicsObject* objectA = physics->staticObjects + j;			
 			// Check bounding box
@@ -232,7 +245,7 @@ void runPhysics(PhysicsSystem* physics, F32 t) {
 	}
 	// TODO: determine correct number of iterations based on time available / average number of contraints
 	// TODO: only iterate over constraints that are not alone (alone contraints converge immediately and probably make up a majority of constraints)
-	for (int i = 0; i < MAX_CONSTRAINT_ITERATIONS; i++) {
+	for (int j = 0; j < MAX_CONSTRAINT_ITERATIONS; j++) {
 
 		// TODO: handle other contraints
 		// DO FRICTIONS
@@ -303,8 +316,9 @@ void runPhysics(PhysicsSystem* physics, F32 t) {
 		}
 		// TODO: remove hardcoded values
 		
-		for (U32 i = 0; i < physics->objectsCount; i++) {
-			PhysicsObject* object = physics->objects + i;
+		// Constant horizontal velocity
+		for (U32 i = 0; i < physics->activeObjectsCount; i++) {
+			PhysicsObject* object = physics->activeObjects[i];
 			if (object->constantConstraint) {							
 				if (object->minNormal >= 0.55) {
 					object->velocity.x = object->horizontalVelocity.x;
@@ -312,14 +326,19 @@ void runPhysics(PhysicsSystem* physics, F32 t) {
 				} 						
 			}
 		}
-		for (U32 i = 0; i < physics->objectsCount; i++) {
-			PhysicsObject* object = physics->objects + i;			
+
+		for (U32 i = 0; i < physics->activeObjectsCount; i++) {
+			PhysicsObject* object = physics->activeObjects[i];			
 			Vector3 horizontalVelocity = {object->velocity.x,0.0f,object->velocity.z};
 			F32 speed = horizontalVelocity.length();
-			if (speed > 50.0f) {
-				object->velocity.x = horizontalVelocity.x*50.0f/speed;	
-				object->velocity.z = horizontalVelocity.z*50.0f/speed;
+			if (speed > object->maxSpeed) {
+				object->velocity.x = horizontalVelocity.x*object->maxSpeed/speed;	
+				object->velocity.z = horizontalVelocity.z*object->maxSpeed/speed;
 			}										
 		}
+	}
+	for (U32 i = 0; i < physics->activeObjectsCount; i++) {
+		PhysicsObject* object = physics->activeObjects[i];
+		object->position = object->position + (object->velocity * t);
 	}
 }

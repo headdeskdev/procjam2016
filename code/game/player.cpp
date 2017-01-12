@@ -3,15 +3,26 @@ struct GroundPlane {
     Vector3 tangentB;
 };
 
+enum GrappleState {
+    GRAPPLE_STATE_READY,    
+    GRAPPLE_STATE_PULL,    
+    GRAPPLE_STATE_FLY
+};
+
+struct GrapplingHook {
+    PhysicsObject* physics;
+    GrappleState grappleState;
+};
+
 struct Player {
     PhysicsObject* physics;
-    PhysicsObject* groundConstraintPhysics;
     Vector2 lastMousePosition;   
     GroundPlane groundPlanes[10];
     U32 groundPlanesCount;
     U32 groundFrames;
     F32 tilt;
     F32 pan;
+    GrapplingHook grapplingHook;
 };
 
 struct Camera3d {
@@ -41,9 +52,31 @@ void updatePlayerPostPhysics(Player* player, PhysicsSystem* physics) {
                     player->groundPlanes[player->groundPlanesCount++] = groundPlane;
                 }
             }
-        }
-                
+        }                
     }
+}
+
+PhysicsObject getGrapplingPhysicsObject() {
+    PhysicsObject physicsObject = {0};
+    collision_Object collisionObject;
+    collisionObject.position = {0.0f,0.0f,0.0f};
+    collisionObject.type = COLLISION_OBJECT_CAPSULE;
+
+    collision_Capsule capsule = {0.0f,0.35f,{0.0,1.0,0.0}};            
+    collisionObject.capsule = capsule;
+
+    physicsObject.collision = collisionObject;
+    physicsObject.position = physicsObject.collision.position;
+    physicsObject.physicsType = PHYSICS_DYNAMIC_NO_ROTATE;            
+    physicsObject.type = 4;
+    physicsObject.clippableTypes = 1;
+    physicsObject.interactableTypes = 0;
+    physicsObject.restitution = 0.01f;
+    physicsObject.friction = 0.05f;
+    physicsObject.drag = 0.02f;
+    physicsObject.gameObject.gameObjectType = 2;
+    physicsObject.maxSpeed = 80.0f;
+    return physicsObject;
 }
 
 PhysicsObject getPlayerPhysicsObject() {
@@ -64,9 +97,9 @@ PhysicsObject getPlayerPhysicsObject() {
     physicsObject.interactableTypes = 0;
     physicsObject.restitution = 0.01f;
     physicsObject.friction = 0.05f;
-    physicsObject.drag = 0.2f;
-
+    physicsObject.active = true;
     physicsObject.gameObject.gameObjectType = 1;
+    physicsObject.maxSpeed = 50.0f;
     return physicsObject;
 }
 
@@ -160,8 +193,9 @@ void updatePlayer(Player* player, platform_Input* input, F32 t, bool debugMode) 
                              (horizontalDirection * moveDirection.x);
 
 
-        Vector3 gravity = {0.0,-9.8f,0.0};                        
-        if (player->groundFrames < 3) {
+        Vector3 gravity = {0.0,-9.8f,0.0};   
+
+        if (player->groundFrames < 3 && player->grapplingHook.grappleState != GRAPPLE_STATE_PULL) {
             if (player->groundPlanesCount > 0 && isMoving) {
                 Vector3 moveDirection = {0.0,-1.0,0.0};
                 for (int i = 0; i < player->groundPlanesCount; i++) {
@@ -174,21 +208,21 @@ void updatePlayer(Player* player, platform_Input* input, F32 t, bool debugMode) 
                 }
                 moveVector = moveDirection;
             }
-            player->physics->acceleration = moveVector * 80.0f + gravity;        
-        } else {
+            player->physics->acceleration = moveVector * 80.0f + gravity;   
+            player->physics->acceleration = player->physics->acceleration - (player->physics->velocity * 7.2f);     
+        } else if (player->grapplingHook.grappleState == GRAPPLE_STATE_PULL) {
+			player->physics->acceleration = moveVector * 5.0f + gravity;
+			Vector3 fly = player->grapplingHook.physics->position - player->physics->position;			
+			fly = fly.normalize() * 30.0f;
+			player->physics->acceleration = player->physics->acceleration + fly;
+			player->physics->acceleration = player->physics->acceleration - (player->physics->velocity * 0.185f);
+		} else {
             player->physics->acceleration = moveVector * 5.0f + gravity;
-        }
-
-
-
-        // Move resistance
-
-        if (player->groundFrames < 2) {
-            F32 drag = 7.2f;
-            player->physics->acceleration = player->physics->acceleration - (player->physics->velocity * drag);
-        } else {
             player->physics->acceleration = player->physics->acceleration - (player->physics->velocity * 0.185f);
         }
+
+
+
 
         if (player->groundFrames <= 2 && BUTTON_WAS_PRESSED(input->k_space)) {
             player->groundFrames = 3;
@@ -198,5 +232,49 @@ void updatePlayer(Player* player, platform_Input* input, F32 t, bool debugMode) 
 
         player->physics->friction = 0.4f;  
         player->physics->clippableTypes = 1;          
+    }
+
+    player->grapplingHook.physics->active = false;
+    switch (player->grapplingHook.grappleState) {
+        case GRAPPLE_STATE_PULL: {
+            Vector3 fly = player->grapplingHook.physics->position - player->physics->position;
+            if (fly.length() < 4.0f) {
+                player->grapplingHook.grappleState = GRAPPLE_STATE_READY;
+            }
+        } break;
+        case GRAPPLE_STATE_FLY: {            
+            Vector3 fly = player->grapplingHook.physics->position - player->physics->position;
+            if (fly.length() > 75.0f) {
+                player->grapplingHook.grappleState = GRAPPLE_STATE_READY;
+            } else {
+                player->grapplingHook.physics->active = true;
+                Vector3 gravity = {0.0,-9.8f,0.0};   
+                player->grapplingHook.physics->acceleration = gravity;
+
+            }
+        } break;
+        case GRAPPLE_STATE_READY: {
+
+        } break;
+    }
+	if (BUTTON_WAS_PRESSED(input->mousePointers[0].button)) {
+		player->grapplingHook.grappleState = GRAPPLE_STATE_FLY;
+		player->grapplingHook.physics->active = true;
+		Vector3 forwardDirection = { cosf(player->pan)*cosf(player->tilt),sinf(player->tilt),sinf(player->pan)*cosf(player->tilt) };
+		player->grapplingHook.physics->velocity = forwardDirection * 50.0f;
+		player->grapplingHook.physics->position = player->physics->position;
+		Vector3 gravity = { 0.0,-9.8f,0.0 };
+		player->grapplingHook.physics->acceleration = gravity;
+	}
+}
+
+void checkGrapplingCollision(Player* player, PhysicsSystem* physics) {
+    for (U32 c = 0; c < physics->contactsCount; c++) {
+        PhysicsContact* contact = physics->contacts + c;
+        if (contact->objectA->physicsType == PHYSICS_STATIC) {
+            if (contact->objectB->gameObject.gameObjectType == 2) {
+                player->grapplingHook.grappleState = GRAPPLE_STATE_PULL;
+            }
+        }                
     }
 }

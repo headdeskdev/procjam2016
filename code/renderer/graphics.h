@@ -182,6 +182,11 @@ struct graphics_RenderObject {
     graphics_ShaderParameterSortedList objectParameters;
 };
 
+enum graphics_DepthCheckType {
+    GRAPHICS_DEPTH_EQUAL,
+    GRAPHICS_DEPTH_LESS
+};
+
 struct graphics_RenderPass {
     Vector3 clearColour;
     bool clearColourEnabled;   
@@ -191,6 +196,7 @@ struct graphics_RenderPass {
     bool alphaBlending;
     // Blending type (also how to deal with DX11)
     bool depthCheck;
+    graphics_DepthCheckType depthCheckType;
     // Depth check type
     bool writeDepth;
     bool cullFace;
@@ -204,6 +210,7 @@ struct graphics_RenderPass {
     F32 viewportHeight;
 
     // Material overrride
+    graphics_Material* materialOverride;
     // Material aspect (we want to have the ability to use specific aspects of materials -
     ///                 like texture/specularity/diffuse etc) Note sure how it will work yet
 
